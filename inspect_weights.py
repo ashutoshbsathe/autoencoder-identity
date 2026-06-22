@@ -1,7 +1,8 @@
 """Print the learned encoder/decoder weights from a run's checkpoint.
 
 Usage:
-    uv run python inspect_weights.py [run_dir] [--step N]
+    uv run python inspect_weights.py [run_dir] [--step N] [--norms]
+    uv run python inspect_weights.py [run_dir] --series   # norms over all steps
 """
 
 import glob
@@ -33,8 +34,69 @@ def show(name, layers):
         print(f'{name}[{i}].b  {b.shape}\n{b}')
 
 
+def norm(a):
+    return float(np.linalg.norm(np.asarray(a)))
+
+
+def show_norms(params, cfg):
+    groups = (('encoder', params.encoder), ('decoder', params.decoder))
+    for name, layers in groups:
+        for i, layer in enumerate(layers):
+            wn, bn = norm(layer.w), norm(layer.b)
+            print(f'{name}[{i}]  ||w|| {wn:.4f}   ||b|| {bn:.4f}')
+    if cfg.model.kind == 'ae' and len(params.encoder) == 1:
+        we = np.asarray(params.encoder[0].w)
+        wd = np.asarray(params.decoder[0].w)
+        be = np.asarray(params.encoder[0].b)
+        bd = np.asarray(params.decoder[0].b)
+        comp = we @ wd
+        print(f'effective bias  ||b_e@W_d + b_d||  {norm(be @ wd + bd):.4f}')
+        print(f'composition     ||W_e@W_d||        {norm(comp):.4f}')
+        if comp.shape[0] == comp.shape[1]:
+            gap = norm(comp - np.eye(comp.shape[0]))
+            print(f'identity gap    ||W_e@W_d - I||    {gap:.4f}')
+
+
+def _total(arrs):
+    return float(np.sqrt(sum(norm(a) ** 2 for a in arrs)))
+
+
+def show_series(traj, cfg):
+    single = cfg.model.kind == 'ae' and len(traj[0][1].encoder) == 1
+    if single:
+        cols = ['step', '|We|', '|be|', '|Wd|', '|bd|', '|eff_b|', '|WeWd-I|']
+    else:
+        cols = ['step', '|W|', '|b|']
+    print(''.join(f'{c:>10}' for c in cols))
+    for step, p in traj:
+        if single:
+            we = np.asarray(p.encoder[0].w)
+            wd = np.asarray(p.decoder[0].w)
+            be = np.asarray(p.encoder[0].b)
+            bd = np.asarray(p.decoder[0].b)
+            comp = we @ wd
+            vals = [
+                norm(we),
+                norm(be),
+                norm(wd),
+                norm(bd),
+                norm(be @ wd + bd),
+                norm(comp - np.eye(len(comp))),
+            ]
+        else:
+            layers = p.encoder + p.decoder
+            vals = [
+                _total([layer.w for layer in layers]),
+                _total([layer.b for layer in layers]),
+            ]
+        print(f'{step:>10}' + ''.join(f'{v:>10.4f}' for v in vals))
+
+
 def main():
     args = sys.argv[1:]
+    series = '--series' in args
+    norms = '--norms' in args
+    args = [a for a in args if a not in ('--series', '--norms')]
     want_step = None
     if '--step' in args:
         i = args.index('--step')
@@ -44,12 +106,20 @@ def main():
     cfg = config.load(os.path.join(run, 'config.yaml'))
     template = model.init_params(jax.random.key(0), cfg.model)
     ckpt_dir = os.path.join(run, 'checkpoints')
-    step, params = checkpoint.load(ckpt_dir, template, want_step)
 
+    if series:
+        traj = checkpoint.load_trajectory(ckpt_dir, template)
+        print(f'run {run}  ({len(traj)} checkpoints)')
+        show_series(traj, cfg)
+        return
+
+    step, params = checkpoint.load(ckpt_dir, template, want_step)
     print(f'run {run}  (checkpoint step {step})')
+    if norms:
+        show_norms(params, cfg)
+        return
     show('encoder', params.encoder)
     show('decoder', params.decoder)
-
     if cfg.model.kind == 'ae' and len(params.encoder) == 1:
         we = np.asarray(params.encoder[0].w)
         wd = np.asarray(params.decoder[0].w)
