@@ -1,13 +1,9 @@
 data:
-  dist: gaussian
+  dist: low_rank_gaussian
   d_in: 32
   n_samples: 4096
-  mean: 0.0
-  std: 1.0
   intrinsic_dim: 4
   noise_std: 0.1
-  decay: 0.8
-  n_components: 4
   splits: [0.8, 0.1, 0.1]
   standardize: false
   seed: 0

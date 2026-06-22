@@ -55,8 +55,7 @@ def make_loss(mcfg, activation):
 
 
 def train(cfg: config.Config) -> model.Params:
-    x = data.sample(cfg.data)
-    train_x, val_x, _ = data.split(x, cfg.data.splits, cfg.data.seed)
+    train_x, val_x, _ = data.prepare(cfg.data)
     val_batch = jnp.asarray(val_x)
 
     activation = ACTIVATIONS[cfg.model.activation]

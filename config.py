@@ -10,12 +10,26 @@ import yaml
 class DataConfig:
     """Data-generating distribution and dataset sizing."""
 
-    dist: Literal['gaussian'] = 'gaussian'
+    dist: Literal[
+        'gaussian',
+        'low_rank_gaussian',
+        'anisotropic_gaussian',
+        'uniform',
+        'laplace',
+        'mixture',
+        'swiss_roll',
+        's_curve',
+    ] = 'gaussian'
     d_in: int = 32
     n_samples: int = 4096
     mean: float = 0.0
     std: float = 1.0
+    intrinsic_dim: int = 4
+    noise_std: float = 0.1
+    decay: float = 0.8
+    n_components: int = 4
     splits: tuple[float, float, float] = (0.8, 0.1, 0.1)
+    standardize: bool = False
     seed: int = 0
 
     def __post_init__(self):

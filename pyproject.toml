@@ -29,6 +29,7 @@ quote-style = "single"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "D"]
+ignore = ["D101", "D102", "D103", "D104", "D105", "D106", "D107"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
