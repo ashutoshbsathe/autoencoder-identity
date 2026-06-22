@@ -1,0 +1,27 @@
+data:
+  dist: gaussian
+  d_in: 3
+  n_samples: 131072
+  mean: 0.0
+  std: 1.0
+  splits: [0.8, 0.1, 0.1]
+  standardize: false
+  seed: 3142
+
+model:
+  kind: ae
+  d_in: 3
+  d_hidden: 3
+  d_mid: null
+  activation: identity
+  beta: 1.0
+  recon: mse
+
+train:
+  optimizer: adam
+  lr: 0.0003
+  batch_size: 256
+  steps: 10000
+  seed: 1618
+  eval_every: 100
+  run_dir: runs/identity/

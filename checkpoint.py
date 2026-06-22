@@ -19,10 +19,18 @@ def save(manager, metrics_path, step, params, metrics):
         f.write(json.dumps({'step': step, **metrics}) + '\n')
 
 
+def load(checkpoint_dir, template, step=None):
+    """Restores one snapshot (latest if step is None) as (step, params)."""
+    manager = make_manager(checkpoint_dir)
+    if step is None:
+        step = manager.latest_step()
+    return step, manager.restore(step, args=ocp.args.StandardRestore(template))
+
+
 def load_trajectory(checkpoint_dir, template):
     """Restores every snapshot into `template`'s structure, in step order."""
     manager = make_manager(checkpoint_dir)
     return [
         (step, manager.restore(step, args=ocp.args.StandardRestore(template)))
-        for step in manager.all_steps()
+        for step in sorted(manager.all_steps())
     ]
