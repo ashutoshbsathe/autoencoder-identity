@@ -8,12 +8,13 @@ dependencies = [
     "optax",
     "numpy",
     "tyro",
+    "orbax-checkpoint",
+    "pyyaml",
 ]
 
 [dependency-groups]
 dev = [
     "ruff",
-    "pytest",
 ]
 
 [tool.uv]
