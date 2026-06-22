@@ -38,6 +38,13 @@ def norm(a):
     return float(np.linalg.norm(np.asarray(a)))
 
 
+def _det(a):
+    a = np.asarray(a)
+    if a.shape[0] != a.shape[1]:
+        return float('nan')
+    return float(np.linalg.det(a))
+
+
 def show_norms(params, cfg):
     groups = (('encoder', params.encoder), ('decoder', params.decoder))
     for name, layers in groups:
@@ -50,11 +57,14 @@ def show_norms(params, cfg):
         be = np.asarray(params.encoder[0].b)
         bd = np.asarray(params.decoder[0].b)
         comp = we @ wd
+        gap = norm(comp - np.eye(len(comp)))
         print(f'effective bias  ||b_e@W_d + b_d||  {norm(be @ wd + bd):.4f}')
         print(f'composition     ||W_e@W_d||        {norm(comp):.4f}')
-        if comp.shape[0] == comp.shape[1]:
-            gap = norm(comp - np.eye(comp.shape[0]))
-            print(f'identity gap    ||W_e@W_d - I||    {gap:.4f}')
+        print(f'identity gap    ||W_e@W_d - I||    {gap:.4f}')
+        if we.shape[0] == we.shape[1]:
+            de, dd = _det(we), _det(wd)
+            print(f'det(W_e)        {de:+.4f}')
+            print(f'det(W_d)        {dd:+.4f}    (product {de * dd:+.4f})')
 
 
 def _total(arrs):
@@ -64,9 +74,19 @@ def _total(arrs):
 def show_series(traj, cfg):
     single = cfg.model.kind == 'ae' and len(traj[0][1].encoder) == 1
     if single:
-        cols = ['step', '|We|', '|be|', '|Wd|', '|bd|', '|eff_b|', '|WeWd-I|']
+        cols = [
+            'step',
+            '||We||',
+            '||be||',
+            '||Wd||',
+            '||bd||',
+            'det(We)',
+            'det(Wd)',
+            '||eff_b||',
+            '||WeWd-I||',
+        ]
     else:
-        cols = ['step', '|W|', '|b|']
+        cols = ['step', '||W||', '||b||']
     print(''.join(f'{c:>10}' for c in cols))
     for step, p in traj:
         if single:
@@ -80,6 +100,8 @@ def show_series(traj, cfg):
                 norm(be),
                 norm(wd),
                 norm(bd),
+                _det(we),
+                _det(wd),
                 norm(be @ wd + bd),
                 norm(comp - np.eye(len(comp))),
             ]
