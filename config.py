@@ -18,15 +18,21 @@ class DataConfig:
     splits: tuple[float, float, float] = (0.8, 0.1, 0.1)
     seed: int = 0
 
+    def __post_init__(self):
+        object.__setattr__(self, 'splits', tuple(self.splits))
+
 
 @dataclass(frozen=True)
 class ModelConfig:
     """Autoencoder architecture. d_mid=None gives a single linear layer."""
 
+    kind: Literal['ae', 'vae'] = 'ae'
     d_in: int = 32
     d_hidden: int = 4
     d_mid: int | None = None
     activation: Literal['identity', 'relu', 'leaky_relu'] = 'identity'
+    beta: float = 1.0
+    recon: Literal['mse', 'gaussian_nll'] = 'mse'
 
 
 @dataclass(frozen=True)

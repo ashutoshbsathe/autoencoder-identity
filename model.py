@@ -19,10 +19,11 @@ class Params(NamedTuple):
 
 
 def _dims(cfg: ModelConfig) -> tuple[list, list]:
+    d_enc = 2 * cfg.d_hidden if cfg.kind == 'vae' else cfg.d_hidden
     if cfg.d_mid is None:
-        return [(cfg.d_in, cfg.d_hidden)], [(cfg.d_hidden, cfg.d_in)]
+        return [(cfg.d_in, d_enc)], [(cfg.d_hidden, cfg.d_in)]
     return (
-        [(cfg.d_in, cfg.d_mid), (cfg.d_mid, cfg.d_hidden)],
+        [(cfg.d_in, cfg.d_mid), (cfg.d_mid, d_enc)],
         [(cfg.d_hidden, cfg.d_mid), (cfg.d_mid, cfg.d_in)],
     )
 
@@ -62,3 +63,17 @@ def reconstruct(
     params: Params, x: jax.Array, activation: Callable
 ) -> jax.Array:
     return decode(params, encode(params, x, activation), activation)
+
+
+def reparameterize(
+    key: jax.Array, mu: jax.Array, logvar: jax.Array
+) -> jax.Array:
+    return mu + jnp.exp(0.5 * logvar) * jax.random.normal(key, mu.shape)
+
+
+def vae_forward(
+    params: Params, x: jax.Array, key: jax.Array, activation: Callable
+) -> tuple[jax.Array, jax.Array, jax.Array]:
+    mu, logvar = jnp.split(encode(params, x, activation), 2, axis=-1)
+    z = reparameterize(key, mu, logvar)
+    return decode(params, z, activation), mu, logvar
