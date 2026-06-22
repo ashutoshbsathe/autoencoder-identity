@@ -1,0 +1,33 @@
+[project]
+name = "ae-identity"
+version = "0.0.0"
+description = "Tiny autoencoder experiments in JAX: linear AE -> nonlinear -> VAE."
+requires-python = ">=3.14"
+dependencies = [
+    "jax[cuda12]",
+    "optax",
+    "numpy",
+    "tyro",
+]
+
+[dependency-groups]
+dev = [
+    "ruff",
+    "pytest",
+]
+
+[tool.uv]
+package = false
+
+[tool.ruff]
+line-length = 80
+target-version = "py314"
+
+[tool.ruff.format]
+quote-style = "single"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "D"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
